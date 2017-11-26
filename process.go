@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -38,11 +37,11 @@ func (p *controlledProcess) gracefulShutdown() {
 	if p.cmd.ProcessState != nil {
 		return // Process is already dead, nothing to do
 	}
-	fmt.Println("Sending SIGINT...")
+	log.Println("Sending SIGINT...")
 	p.cmd.Process.Signal(os.Signal(syscall.SIGINT))
-	time.Sleep(time.Duration(time.Second))
+	<-time.After(time.Duration(time.Second))
 	if p.cmd.ProcessState == nil {
-		fmt.Println("Process still alive, send SIGKILL")
+		log.Println("Process still alive, send SIGKILL")
 		p.cmd.Process.Kill()
 	}
 }

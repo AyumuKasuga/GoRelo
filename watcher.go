@@ -1,19 +1,44 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 )
+
+const reloadPeriod = time.Duration(time.Microsecond * 500)
+const waitReloadPeriod = time.Duration(time.Microsecond * 200)
+
+type reloader struct {
+	lastEvent time.Time
+	cProc     *controlledProcess
+}
+
+func (r *reloader) periodicChecker() {
+	for {
+		<-time.After(reloadPeriod)
+		if r.lastEvent.IsZero() == false && time.Since(r.lastEvent) > waitReloadPeriod {
+			log.Println("Something changes, reloading...")
+			r.cProc.gracefulShutdown()
+			r.cProc.runProcess()
+			r.lastEvent = time.Time{}
+		}
+	}
+}
+
+func (r *reloader) eventTrigger() {
+	r.lastEvent = time.Now()
+}
 
 func addRecursively(watcher *fsnotify.Watcher, dir string) {
 	watcher.Add(dir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
+		// Hush little baby, user should not know about our little mistakes...
 	}
 	for _, file := range files {
 		if file.IsDir() == true {
@@ -22,7 +47,7 @@ func addRecursively(watcher *fsnotify.Watcher, dir string) {
 	}
 }
 
-func runWatch(includeDirs []string, cProc controlledProcess) {
+func runWatch(includeDirs []string, cProc *controlledProcess) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -32,6 +57,11 @@ func runWatch(includeDirs []string, cProc controlledProcess) {
 	for _, dir := range includeDirs {
 		addRecursively(watcher, dir)
 	}
+
+	rldr := reloader{
+		cProc: cProc,
+	}
+	go rldr.periodicChecker()
 
 	for {
 		select {
@@ -43,10 +73,7 @@ func runWatch(includeDirs []string, cProc controlledProcess) {
 			if event.Op&fsnotify.Create == fsnotify.Create {
 				addRecursively(watcher, event.Name)
 			}
-
-			fmt.Println("Something changes, reloading...")
-			cProc.gracefulShutdown()
-			cProc.runProcess()
+			rldr.eventTrigger()
 		case err := <-watcher.Errors:
 			log.Println("error:", err)
 		}

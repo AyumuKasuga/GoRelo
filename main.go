@@ -14,6 +14,6 @@ func main() {
 	done := make(chan bool)
 	go waitSignals(done)
 	includeDirs := []string{"./"}
-	go runWatch(includeDirs, cProc)
+	go runWatch(includeDirs, &cProc)
 	<-done
 }
