@@ -38,10 +38,18 @@ func runWatch(includeDirs []string, cmd *exec.Cmd, cmdArgs []string) {
 	for {
 		select {
 		case event := <-watcher.Events:
-			log.Println("event:", event)
+			if event.Op&fsnotify.Rename == fsnotify.Rename || event.Op&fsnotify.Remove == fsnotify.Remove {
+				watcher.Remove(event.Name)
+			}
+
+			if event.Op&fsnotify.Create == fsnotify.Create {
+				addRecursively(watcher, event.Name)
+			}
+
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				log.Println("modified file:", event.Name)
 			}
+
 			fmt.Println("reloading...")
 			gracefulShutdown(cmd)
 			cmd = runProcess(cmdArgs)
