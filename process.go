@@ -22,10 +22,13 @@ func runProcess(command []string) (cmd *exec.Cmd) {
 }
 
 func gracefulShutdown(cmd *exec.Cmd) {
+	if cmd.ProcessState != nil {
+		return // Process is already dead, nothing to do
+	}
 	fmt.Println("Sending SIGINT...")
 	cmd.Process.Signal(os.Signal(syscall.SIGINT))
 	time.Sleep(time.Duration(time.Second))
-	if cmd.ProcessState == nil || cmd.ProcessState.Exited() == false {
+	if cmd.ProcessState == nil {
 		fmt.Println("Process still alive, send SIGKILL")
 		cmd.Process.Kill()
 	}
@@ -37,4 +40,10 @@ func processWatcher(cmd *exec.Cmd) {
 		fmt.Println(err)
 	}
 	fmt.Println("Program exited")
+}
+
+func waitSignals(sigs chan os.Signal, done chan bool) {
+	sig := <-sigs
+	fmt.Println("Signal received: ", sig)
+	done <- true
 }

@@ -4,19 +4,23 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/fsnotify/fsnotify"
 )
 
 func main() {
 	cmd := runProcess(os.Args[1:])
-
+	sigs := make(chan os.Signal)
+	done := make(chan bool)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go waitSignals(sigs, done)
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer watcher.Close()
-
 	go func() {
 		for {
 			select {
@@ -38,4 +42,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	<-done
+	gracefulShutdown(cmd)
+
 }
