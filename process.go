@@ -24,6 +24,7 @@ func runProcess(command []string) (cmd *exec.Cmd) {
 
 func gracefulShutdown(cmd *exec.Cmd) {
 	if cmd.ProcessState != nil {
+		log.Println("Looks like process already dead")
 		return // Process is already dead, nothing to do
 	}
 	fmt.Println("Sending SIGINT...")

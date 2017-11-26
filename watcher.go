@@ -12,7 +12,6 @@ import (
 
 func addRecursively(watcher *fsnotify.Watcher, dir string) {
 	watcher.Add(dir)
-	log.Println("DIR: ", dir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Println(err)
@@ -46,13 +45,9 @@ func runWatch(includeDirs []string, cmd *exec.Cmd, cmdArgs []string) {
 				addRecursively(watcher, event.Name)
 			}
 
-			if event.Op&fsnotify.Write == fsnotify.Write {
-				log.Println("modified file:", event.Name)
-			}
-
-			fmt.Println("reloading...")
-			gracefulShutdown(cmd)
+			fmt.Println("Something changes, reloading...")
 			cmd = runProcess(cmdArgs)
+			gracefulShutdown(cmd)
 		case err := <-watcher.Errors:
 			log.Println("error:", err)
 		}
