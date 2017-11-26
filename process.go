@@ -5,49 +5,44 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"os/signal"
 	"syscall"
 	"time"
 )
 
-func runProcess(command []string) (cmd *exec.Cmd) {
-	cmd = exec.Command(command[0], command[1:]...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
-	}
-	go processWatcher(cmd)
-	return
+type controlledProcess struct {
+	command []string
+	cmd     *exec.Cmd
+	exited  bool
 }
 
-func gracefulShutdown(cmd *exec.Cmd) {
-	if cmd.ProcessState != nil {
-		log.Println("Looks like process already dead")
+func (p *controlledProcess) runProcess() {
+	p.cmd = exec.Command(p.command[0], p.command[1:]...)
+	p.cmd.Stdout, p.cmd.Stderr, p.cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
+	if err := p.cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+	go p.processWatcher()
+}
+
+func (p *controlledProcess) processWatcher() {
+	err := p.cmd.Wait()
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println("Program exited")
+}
+
+// Gently send SIGINT to the process, wait some time
+// then if process still alive -- kill it.
+func (p *controlledProcess) gracefulShutdown() {
+	if p.cmd.ProcessState != nil {
 		return // Process is already dead, nothing to do
 	}
 	fmt.Println("Sending SIGINT...")
-	cmd.Process.Signal(os.Signal(syscall.SIGINT))
+	p.cmd.Process.Signal(os.Signal(syscall.SIGINT))
 	time.Sleep(time.Duration(time.Second))
-	if cmd.ProcessState == nil {
+	if p.cmd.ProcessState == nil {
 		fmt.Println("Process still alive, send SIGKILL")
-		cmd.Process.Kill()
+		p.cmd.Process.Kill()
 	}
-}
-
-func processWatcher(cmd *exec.Cmd) {
-	err := cmd.Wait()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Program exited")
-}
-
-func waitSignals(done chan bool) {
-	sigs := make(chan os.Signal)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	sig := <-sigs
-	fmt.Println("Signal received: ", sig)
-	done <- true
 }

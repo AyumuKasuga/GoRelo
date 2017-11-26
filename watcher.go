@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
@@ -23,7 +22,7 @@ func addRecursively(watcher *fsnotify.Watcher, dir string) {
 	}
 }
 
-func runWatch(includeDirs []string, cmd *exec.Cmd, cmdArgs []string) {
+func runWatch(includeDirs []string, cProc controlledProcess) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -46,8 +45,8 @@ func runWatch(includeDirs []string, cmd *exec.Cmd, cmdArgs []string) {
 			}
 
 			fmt.Println("Something changes, reloading...")
-			cmd = runProcess(cmdArgs)
-			gracefulShutdown(cmd)
+			cProc.gracefulShutdown()
+			cProc.runProcess()
 		case err := <-watcher.Errors:
 			log.Println("error:", err)
 		}

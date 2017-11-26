@@ -5,11 +5,15 @@ import (
 )
 
 func main() {
-	cmd := runProcess(os.Args[1:])
-	defer gracefulShutdown(cmd)
+	cProc := controlledProcess{
+		command: os.Args[1:],
+		cmd:     nil,
+	}
+	cProc.runProcess()
+	defer cProc.gracefulShutdown()
 	done := make(chan bool)
 	go waitSignals(done)
 	includeDirs := []string{"./"}
-	go runWatch(includeDirs, cmd, os.Args[1:])
+	go runWatch(includeDirs, cProc)
 	<-done
 }
