@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"syscall"
 	"time"
 )
@@ -42,7 +43,9 @@ func processWatcher(cmd *exec.Cmd) {
 	fmt.Println("Program exited")
 }
 
-func waitSignals(sigs chan os.Signal, done chan bool) {
+func waitSignals(done chan bool) {
+	sigs := make(chan os.Signal)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-sigs
 	fmt.Println("Signal received: ", sig)
 	done <- true
