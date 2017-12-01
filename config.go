@@ -12,6 +12,9 @@ import (
 
 func getAbsDirs(dirs []string) (absDirs []string) {
 	for _, dir := range dirs {
+		if dir == "" {
+			continue
+		}
 		absDir, _ := filepath.Abs(dir)
 		absDirs = append(absDirs, absDir)
 	}
@@ -49,5 +52,4 @@ func (c *config) parseCmdArgs() {
 	c.killTimeout = *killTimeout
 	c.killSignal = syscall.SIGINT
 	c.command = flag.Args()
-	fmt.Println(c.killTimeout)
 }

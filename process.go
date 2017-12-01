@@ -38,7 +38,14 @@ func (p *controlledProcess) gracefulShutdown() {
 	}
 	log.Println("Sending SIGINT...")
 	p.cmd.Process.Signal(os.Signal(cfg.killSignal))
-	<-time.After(time.Duration(cfg.killTimeout))
+	timePassed := time.Duration(0)
+	for timePassed < cfg.killTimeout {
+		if p.cmd.ProcessState != nil {
+			return
+		}
+		<-time.After(time.Duration(time.Millisecond * 100))
+		timePassed += time.Duration(time.Millisecond * 100)
+	}
 	if p.cmd.ProcessState == nil {
 		log.Println("Process still alive, send SIGKILL")
 		p.cmd.Process.Kill()
