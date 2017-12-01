@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -12,8 +13,16 @@ import (
 const reloadPeriod = time.Duration(time.Microsecond * 500)
 const waitReloadPeriod = time.Duration(time.Microsecond * 200)
 
+var lastEventMutex = &sync.Mutex{}
+
 type reloader struct {
 	lastEvent time.Time
+}
+
+func (r *reloader) updateLastEvent(t time.Time) {
+	lastEventMutex.Lock()
+	r.lastEvent = t
+	lastEventMutex.Unlock()
 }
 
 func (r *reloader) periodicChecker() {
@@ -23,13 +32,13 @@ func (r *reloader) periodicChecker() {
 			log.Println("Something changes, reloading...")
 			cProc.gracefulShutdown()
 			cProc.runProcess()
-			r.lastEvent = time.Time{}
+			r.updateLastEvent(time.Time{})
 		}
 	}
 }
 
 func (r *reloader) eventTrigger() {
-	r.lastEvent = time.Now()
+	r.updateLastEvent(time.Now())
 }
 
 func addRecursively(watcher *fsnotify.Watcher, dir string) {
