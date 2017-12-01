@@ -4,10 +4,19 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 )
+
+func getAbsDirs(dirs []string) (absDirs []string) {
+	for _, dir := range dirs {
+		absDir, _ := filepath.Abs(dir)
+		absDirs = append(absDirs, absDir)
+	}
+	return
+}
 
 type config struct {
 	watchFolders   []string
@@ -29,8 +38,9 @@ func (c *config) parseCmdArgs() {
 		os.Exit(1)
 	}
 
-	c.watchFolders = strings.Split(*watchFolders, " ")
-	c.excludeFolders = strings.Split(*excludeFolders, " ")
+	c.watchFolders = getAbsDirs(strings.Split(*watchFolders, " "))
+	c.excludeFolders = getAbsDirs(strings.Split(*excludeFolders, " "))
+
 	c.killTimeout = *killTimeout
 	c.killSignal = syscall.SIGINT
 	c.command = flag.Args()

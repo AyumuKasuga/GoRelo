@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -33,6 +34,12 @@ func (r *reloader) eventTrigger() {
 }
 
 func addRecursively(watcher *fsnotify.Watcher, dir string) {
+	for _, exclDir := range cfg.excludeFolders {
+		if exclDir == dir {
+			return
+		}
+	}
+	fmt.Println(dir)
 	watcher.Add(dir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
