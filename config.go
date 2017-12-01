@@ -27,8 +27,13 @@ type config struct {
 }
 
 func (c *config) parseCmdArgs() {
+	flag.Usage = func() {
+		fmt.Printf("Usage: gorelo [options] command \n\n")
+		flag.PrintDefaults()
+	}
+
 	watchFolders := flag.String("w", "./", "Folders for watch (space separated)")
-	excludeFolders := flag.String("e", "", "Do not watch these folders")
+	excludeFolders := flag.String("e", "", "Exclude folders from watcher (space separated)")
 	killTimeout := flag.Duration("t", time.Second, "Timeout before send SIGKILL")
 
 	flag.Parse()
