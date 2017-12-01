@@ -1,0 +1,18 @@
+language: go
+
+go:
+  - 1.8
+
+before_script:
+  - go get -u github.com/golang/lint/golint
+
+script:
+  - go build -v
+
+after_script:
+  - test -z "$(gofmt -s -l -w . | tee /dev/stderr)"
+  - test -z "$(golint .     | tee /dev/stderr)"
+
+os:
+  - linux
+  - osx
