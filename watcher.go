@@ -14,7 +14,6 @@ const waitReloadPeriod = time.Duration(time.Microsecond * 200)
 
 type reloader struct {
 	lastEvent time.Time
-	cProc     *controlledProcess
 }
 
 func (r *reloader) periodicChecker() {
@@ -22,8 +21,8 @@ func (r *reloader) periodicChecker() {
 		<-time.After(reloadPeriod)
 		if r.lastEvent.IsZero() == false && time.Since(r.lastEvent) > waitReloadPeriod {
 			log.Println("Something changes, reloading...")
-			r.cProc.gracefulShutdown()
-			r.cProc.runProcess()
+			cProc.gracefulShutdown()
+			cProc.runProcess()
 			r.lastEvent = time.Time{}
 		}
 	}
@@ -47,20 +46,18 @@ func addRecursively(watcher *fsnotify.Watcher, dir string) {
 	}
 }
 
-func runWatch(includeDirs []string, cProc *controlledProcess) {
+func runWatch() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer watcher.Close()
 
-	for _, dir := range includeDirs {
+	for _, dir := range cfg.watchFolders {
 		addRecursively(watcher, dir)
 	}
 
-	rldr := reloader{
-		cProc: cProc,
-	}
+	rldr := reloader{}
 	go rldr.periodicChecker()
 
 	for {

@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"syscall"
 	"time"
 )
 
@@ -38,8 +37,8 @@ func (p *controlledProcess) gracefulShutdown() {
 		return // Process is already dead, nothing to do
 	}
 	log.Println("Sending SIGINT...")
-	p.cmd.Process.Signal(os.Signal(syscall.SIGINT))
-	<-time.After(time.Duration(time.Second))
+	p.cmd.Process.Signal(os.Signal(cfg.killSignal))
+	<-time.After(time.Duration(cfg.killTimeout))
 	if p.cmd.ProcessState == nil {
 		log.Println("Process still alive, send SIGKILL")
 		p.cmd.Process.Kill()

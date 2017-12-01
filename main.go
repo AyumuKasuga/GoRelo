@@ -1,19 +1,19 @@
 package main
 
-import (
-	"os"
-)
+var cfg config
+var cProc controlledProcess
 
 func main() {
-	cProc := controlledProcess{
-		command: os.Args[1:],
-		cmd:     nil,
+	cfg = config{}
+	cfg.parseCmdArgs()
+
+	cProc = controlledProcess{
+		command: cfg.command,
 	}
 	cProc.runProcess()
 	defer cProc.gracefulShutdown()
 	done := make(chan bool)
 	go waitSignals(done)
-	includeDirs := []string{"./"}
-	go runWatch(includeDirs, &cProc)
+	go runWatch()
 	<-done
 }
