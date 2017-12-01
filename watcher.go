@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -39,7 +38,6 @@ func addRecursively(watcher *fsnotify.Watcher, dir string) {
 			return
 		}
 	}
-	fmt.Println(dir)
 	watcher.Add(dir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
